@@ -1,0 +1,68 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: tfvalidate
+    jobs:
+      - job: validate
+        continueOnerror: false
+        steps:
+          - task: TerraformInstaller@0
+            displayName: Tfinstaller
+            inputs:
+              terraformVersion: 'latest'
+          - task: TerraformTaskV3@3
+            displayName: tfInitialization
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: 'Azure Pass - Sponsorship(1e8a52f2-309b-4c88-aaa3-2a943a343b79)'
+              backendAzureRmResourceGroupName: 'terraform-rg'
+              backendAzureRmStorageAccountName: 'appstorage11'
+              backendAzureRmContainerName: 'preprod'
+              backendAzureRmKey: '/vBk8ZxKRBMM+S8uxPyS818AQoJRDpyQHonFRldbWiu0GAzN7o4qMpnUGVUi/U5QN6JZRCgcKkHR+ASt7+BRQQ=='
+          - task: TerraformTaskV3@3
+            displayName: Validation
+            inputs:
+              provider: 'azurerm'
+              command: 'validate'
+  - stage: tfDeploy
+    condition: succeeded('tfvalidate')
+    dependsOn: tfvalidate
+    jobs:
+      - job: apply
+        steps:
+          - task: TerraformInstaller@0
+            displayName: Tfinstaller
+            inputs:
+              terraformVersion: 'latest'
+          - task: TerraformTaskV3@3
+            displayName: tfInitialization
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: 'Azure Pass - Sponsorship(1e8a52f2-309b-4c88-aaa3-2a943a343b79)'
+              backendAzureRmResourceGroupName: 'terraform-rg'
+              backendAzureRmStorageAccountName: 'appstorage11'
+              backendAzureRmContainerName: 'preprod'
+              backendAzureRmKey: '/vBk8ZxKRBMM+S8uxPyS818AQoJRDpyQHonFRldbWiu0GAzN7o4qMpnUGVUi/U5QN6JZRCgcKkHR+ASt7+BRQQ=='
+          - task: TerraformTaskV3@3
+            displayName: Plan
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              environmentServiceNameAzureRM: 'Azure Pass - Sponsorship(1e8a52f2-309b-4c88-aaa3-2a943a343b79)'
+          - task: TerraformTaskV3@3
+            displayName: Apply
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              environmentServiceNameAzureRM: 'Azure Pass - Sponsorship(1e8a52f2-309b-4c88-aaa3-2a943a343b79)'
